@@ -1,0 +1,12 @@
+{
+  "functions": {
+    "api/index.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "rewrites": [
+    { "source": "/admin/:path*", "destination": "/api/admin/:path*" },
+    { "source": "/q/:path*", "destination": "/api/q/:path*" },
+    { "source": "/api/:path*", "destination": "/api/index.js" }
+  ]
+}
