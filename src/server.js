@@ -14,6 +14,14 @@ async function bootstrap() {
     console.log('Seeded default admin: admin@example.com / admin123');
   }
 
+  // Ensure demo admin exists
+  const demoAdmin = await Admin.findOne({ where: { email: 'demo@demo.com' } });
+  if (!demoAdmin) {
+    const demoPass = await bcrypt.hash('demodemo', 10);
+    await Admin.create({ email: 'demo@demo.com', password: demoPass });
+    console.log('Seeded demo admin: demo@demo.com / demodemo');
+  }
+
   app.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
   });
