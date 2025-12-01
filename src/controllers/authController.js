@@ -42,7 +42,14 @@ async function refresh(req, res) {
   }
 }
 
+async function logout(req, res) {
+  // With stateless JWTs there is nothing to revoke server-side;
+  // client should discard tokens. This endpoint exists for symmetry.
+  return res.json({ message: 'Logged out' });
+}
+
 module.exports = {
   login,
-  refresh
+  refresh,
+  logout
 };
