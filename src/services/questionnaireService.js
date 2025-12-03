@@ -1,10 +1,24 @@
-const { Questionnaire, Question, sequelize } = require('../models');
+const { Questionnaire, Question, QuestionnaireVersion, sequelize } = require('../models');
 
-async function createQuestionnaire(payload) {
+async function createQuestionnaire(payload, admin) {
   return sequelize.transaction(async (t) => {
     const { title, description, questions = [] } = payload;
     const questionnaire = await Questionnaire.create(
-      { title, description },
+      {
+        title,
+        description,
+        admin_id: admin?.id || null,
+        is_legacy: false,
+        version_number: 1
+      },
+      { transaction: t }
+    );
+
+    await QuestionnaireVersion.create(
+      {
+        questionnaire_id: questionnaire.id,
+        version_number: questionnaire.version_number
+      },
       { transaction: t }
     );
 

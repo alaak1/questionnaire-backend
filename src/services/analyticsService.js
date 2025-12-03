@@ -1,21 +1,36 @@
-const { Questionnaire, Question, UserAnswerSession, Answer, User } = require('../models');
+const { Questionnaire, Question, UserAnswerSession, Answer, User, UserReport, QuestionnaireVersion } = require('../models');
+const { Op } = require('sequelize');
 
-async function getQuestionnaireResults(questionnaireId) {
+async function getQuestionnaireResults(questionnaireId, admin) {
   const questionnaire = await Questionnaire.findByPk(questionnaireId, {
     include: [{ model: Question, as: 'questions', order: [['order_index', 'ASC']] }]
   });
   if (!questionnaire) {
     throw new Error('Questionnaire not found');
   }
+  const isLegacy = questionnaire.is_legacy || questionnaire.admin_id === null;
+
+  const sessionWhere = {
+    questionnaire_id: questionnaireId,
+    completed_at: { [Op.ne]: null }
+  };
+  if (!isLegacy) {
+    sessionWhere.admin_id = admin?.id || null;
+  }
 
   const sessions = await UserAnswerSession.findAll({
-    where: { questionnaire_id: questionnaireId, completed_at: { [require('sequelize').Op.ne]: null } },
+    where: sessionWhere,
     include: [
       { model: User, as: 'user' },
       {
         model: Answer,
         as: 'answers',
         include: [{ model: Question, as: 'question' }]
+      },
+      {
+        model: UserReport,
+        as: 'report',
+        include: [{ model: QuestionnaireVersion, as: 'questionnaireVersion' }]
       }
     ]
   });
@@ -55,7 +70,7 @@ async function getQuestionnaireResults(questionnaireId) {
             val.forEach((v) => {
               optionCounts[v] = (optionCounts[v] || 0) + 1;
             });
-          } else if (val) {
+          } else if (val !== undefined && val !== null) {
             optionCounts[val] = (optionCounts[val] || 0) + 1;
           }
         });
@@ -81,6 +96,8 @@ async function getQuestionnaireResults(questionnaireId) {
     sessionId: s.id,
     user: s.user ? { id: s.user.id, name: s.user.name, email: s.user.email } : null,
     completed_at: s.completed_at,
+    scoring_output: s.report?.scoring_output || null,
+    ai_report_text: s.report?.ai_report_text || null,
     answers: s.answers.map((a) => ({
       questionId: a.question_id,
       questionText: a.question.question_text,

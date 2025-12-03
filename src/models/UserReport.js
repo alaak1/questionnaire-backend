@@ -2,49 +2,48 @@ const { DataTypes, Model } = require('sequelize');
 const sequelize = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
-class UserAnswerSession extends Model {}
+class UserReport extends Model {}
 
-UserAnswerSession.init(
+UserReport.init(
   {
     id: {
       type: DataTypes.UUID,
       defaultValue: uuidv4,
       primaryKey: true
     },
-    user_id: {
+    session_id: {
       type: DataTypes.UUID,
       allowNull: false
     },
-    questionnaire_id: {
+    questionnaire_version_id: {
       type: DataTypes.UUID,
       allowNull: false
     },
-    admin_id: {
-      type: DataTypes.UUID,
+    scoring_output: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: {}
+    },
+    ai_report_text: {
+      type: DataTypes.TEXT,
       allowNull: true
     },
-    started_at: {
+    created_at: {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW
-    },
-    completed_at: {
-      type: DataTypes.DATE,
-      allowNull: true
     }
   },
   {
     sequelize,
-    modelName: 'UserAnswerSession',
-    tableName: 'user_answer_sessions',
+    modelName: 'UserReport',
+    tableName: 'user_reports',
     timestamps: false,
     indexes: [
-      { fields: ['questionnaire_id'] },
-      { fields: ['user_id'] },
-      { fields: ['admin_id'] },
-      { fields: ['completed_at'] }
+      { fields: ['session_id'] },
+      { fields: ['questionnaire_version_id'] }
     ]
   }
 );
 
-module.exports = UserAnswerSession;
+module.exports = UserReport;
