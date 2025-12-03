@@ -6,7 +6,7 @@ let synced = false;
 
 async function ensureDb() {
   if (synced) return;
-  await sequelize.sync();
+  await sequelize.sync({ alter: true });
   synced = true;
 }
 

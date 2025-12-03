@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const PORT = process.env.PORT || 4000;
 
 async function bootstrap() {
-  await sequelize.sync();
+  await sequelize.sync({ alter: true });
 
   const adminCount = await Admin.count();
   if (adminCount === 0) {
