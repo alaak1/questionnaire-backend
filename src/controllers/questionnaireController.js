@@ -12,6 +12,8 @@ function canAccessQuestionnaire(questionnaire, admin) {
   return questionnaire.admin_id === admin?.id;
 }
 
+let attemptedSync = false;
+
 async function list(req, res) {
   const where = {
     [Op.or]: [{ is_legacy: true }, { admin_id: null }, { admin_id: req.admin?.id }]
@@ -20,12 +22,33 @@ async function list(req, res) {
     where.id = DEMO_ALLOWED_ID;
   }
 
-  const questionnaires = await Questionnaire.findAll({
-    attributes: ['id', 'title', 'description', 'created_at', 'admin_id', 'is_legacy', 'version_number'],
-    where,
-    order: [['created_at', 'DESC']]
-  });
-  res.json(questionnaires);
+  try {
+    const questionnaires = await Questionnaire.findAll({
+      attributes: ['id', 'title', 'description', 'created_at', 'admin_id', 'is_legacy', 'version_number'],
+      where,
+      order: [['created_at', 'DESC']]
+    });
+    return res.json(questionnaires);
+  } catch (err) {
+    // If schema is missing new columns (admin_id/is_legacy/version_number), attempt to sync once.
+    const missingColumn =
+      err?.original?.code === 'ER_BAD_FIELD_ERROR' || err?.original?.code === 'ER_NO_SUCH_FIELD';
+    if (!attemptedSync && missingColumn) {
+      attemptedSync = true;
+      try {
+        await require('../models').sequelize.sync({ alter: true });
+        const questionnaires = await Questionnaire.findAll({
+          attributes: ['id', 'title', 'description', 'created_at', 'admin_id', 'is_legacy', 'version_number'],
+          where,
+          order: [['created_at', 'DESC']]
+        });
+        return res.json(questionnaires);
+      } catch (syncErr) {
+        return res.status(500).json({ message: 'Schema sync failed', error: syncErr.message });
+      }
+    }
+    return res.status(500).json({ message: 'Failed to load questionnaires', error: err.message });
+  }
 }
 
 async function create(req, res) {
